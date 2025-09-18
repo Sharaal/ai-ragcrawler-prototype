@@ -1,0 +1,344 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -208,
+        -32
+      ],
+      "id": "63de761b-c8ca-422f-a210-122633407b97",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  url: 'https://blog.sharaal.de/2025/06/20/die-zukunft-der-arbeitswelt-chancen-und-herausforderungen-durch-ki.html',\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        -32
+      ],
+      "id": "1117c2a9-a4ba-4a15-b6a7-bd53303441ff",
+      "name": "Define URL"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        -32
+      ],
+      "id": "05c878e1-f88b-4325-91fc-164228e6774a",
+      "name": "HTTP Request"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "title",
+              "cssSelector": ".post-title"
+            },
+            {
+              "key": "text",
+              "cssSelector": ".post-content",
+              "returnValue": "html"
+            },
+            {
+              "key": "published_at",
+              "cssSelector": ".dt-published",
+              "returnValue": "attribute",
+              "attribute": "datetime"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        416,
+        -32
+      ],
+      "id": "b2888f73-cb3d-44a0-860e-44540c8dd74a",
+      "name": "HTML"
+    },
+    {
+      "parameters": {
+        "html": "={{ $json.text }}",
+        "destinationKey": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        624,
+        -32
+      ],
+      "id": "b6aef2c7-82e4-454c-ab0a-563494cc31e7",
+      "name": "Markdown"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  vectorisingText: `${$input.first().json.title}\\n\\n${$input.first().json.text}`,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        0,
+        208
+      ],
+      "id": "cdc9c3be-517e-491c-aa03-4f0571f309f6",
+      "name": "Add vectorisingText"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/embeddings",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "embeddinggemma"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.vectorisingText }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        208,
+        208
+      ],
+      "id": "e93c2aa4-fabd-4c6a-9811-d6344820bb9c",
+      "name": "Vectorising"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  title: $('Markdown').first().json.title,\n  text: $('Markdown').first().json.text,\n  published_at: $('Markdown').first().json.published_at,\n  url: $('Define URL').first().json.url,\n  embedding: $input.first().json.embedding,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        416,
+        208
+      ],
+      "id": "4e731be5-3198-4c53-bfc6-35f71deaacaf",
+      "name": "Map to DB Object"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "news",
+          "mode": "list",
+          "cachedResultName": "news"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "published_at",
+              "displayName": "published_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "embedding",
+              "displayName": "embedding",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": []
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        624,
+        208
+      ],
+      "id": "d27cab62-be29-40ca-9633-26114c7f9875",
+      "name": "Insert rows in a table",
+      "credentials": {
+        "postgres": {
+          "id": "eyuB8DY6gvj3FVFl",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Define URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Define URL": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "HTML",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML": {
+      "main": [
+        [
+          {
+            "node": "Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Markdown": {
+      "main": [
+        [
+          {
+            "node": "Add vectorisingText",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add vectorisingText": {
+      "main": [
+        [
+          {
+            "node": "Vectorising",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vectorising": {
+      "main": [
+        [
+          {
+            "node": "Map to DB Object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map to DB Object": {
+      "main": [
+        [
+          {
+            "node": "Insert rows in a table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "5091025b-d95b-4ffa-a184-345102fa6bea",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8ed4471de2dc5b30576f1e695a9776eb91f52e51e819d1e57038b733d5ba24b9"
+  },
+  "id": "asyevXYC3ZnZx5du",
+  "tags": []
+}
