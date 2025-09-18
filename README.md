@@ -1,5 +1,16 @@
 # ai-ragcrawler-prototype
 
+![n8n-workflow](./docs/n8n-workflow.png)
+
+What the workflow do:
+1. Defines a static URL for the test
+2. Get the HTML of that URL
+3. Map HTML to JSON object and transform HTML of the text to Markdown
+4. Define `vectorisingText` as combination of title and text
+5. Use local embedding model to add the embedding vectors 
+6. Combine all data to a DB object
+7. Stores it in the PostgreSQL
+
 ## Installation
 
 1. Install [Docker Desktop](https://www.docker.com/) and start it
