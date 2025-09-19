@@ -14,68 +14,6 @@
     },
     {
       "parameters": {
-        "url": "={{ $json.url }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        -160,
-        0
-      ],
-      "id": "05c878e1-f88b-4325-91fc-164228e6774a",
-      "name": "HTTP Request"
-    },
-    {
-      "parameters": {
-        "operation": "extractHtmlContent",
-        "extractionValues": {
-          "values": [
-            {
-              "key": "title",
-              "cssSelector": ".post-title"
-            },
-            {
-              "key": "text",
-              "cssSelector": ".post-content",
-              "returnValue": "html"
-            },
-            {
-              "key": "published_at",
-              "cssSelector": ".dt-published",
-              "returnValue": "attribute",
-              "attribute": "datetime"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.html",
-      "typeVersion": 1.2,
-      "position": [
-        48,
-        0
-      ],
-      "id": "b2888f73-cb3d-44a0-860e-44540c8dd74a",
-      "name": "HTML"
-    },
-    {
-      "parameters": {
-        "html": "={{ $json.text }}",
-        "destinationKey": "text",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.markdown",
-      "typeVersion": 1,
-      "position": [
-        256,
-        0
-      ],
-      "id": "b6aef2c7-82e4-454c-ab0a-563494cc31e7",
-      "name": "Markdown"
-    },
-    {
-      "parameters": {
         "jsCode": "return [{\n  vectorisingText: `${$input.first().json.title}\\n\\n${$input.first().json.text}`,\n}];"
       },
       "type": "n8n-nodes-base.code",
@@ -117,7 +55,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{\n  title: $('Markdown').first().json.title,\n  text: $('Markdown').first().json.text,\n  published_at: $('Markdown').first().json.published_at,\n  url: $('Loop Over Items').first().json.url,\n  embedding: $input.first().json.embedding,\n}];"
+        "jsCode": "return [{\n  title: $('HTML to Markdown for text').first().json.title,\n  text: $('HTML to Markdown for text').first().json.text,\n  published_at: $('HTML to Markdown for text').first().json.published_at,\n  url: $('Foreach new URL').first().json.url,\n  embedding: $input.first().json.embedding,\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -127,6 +65,236 @@
       ],
       "id": "4e731be5-3198-4c53-bfc6-35f71deaacaf",
       "name": "Map to DB Object"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "url",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        -16
+      ],
+      "id": "37c8d7db-8f4f-42a2-b23a-07a7b10afa04",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  url: 'https://blog.sharaal.de',\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -768,
+        -416
+      ],
+      "id": "5c202fd4-9609-46d3-9b53-12b89e998a7a",
+      "name": "Define Overview Page URL"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT url FROM news WHERE url IN ({{ $json.formattedUrls }});",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        272,
+        -416
+      ],
+      "id": "33731792-71df-4aa8-8a4c-a4dee1d65fbc",
+      "name": "SELECT existing URLs",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "eyuB8DY6gvj3FVFl",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const originalUrls = $('Add Overview Page URL to every Newspage URL').first().json.url;\nconst existingUrls = $input.all().reduce((array, current) => [...array, current.json.url], []);\nconst newUrls = originalUrls.filter(url => !existingUrls.includes(url));\n\nreturn [\n  {\n    existingUrls,\n    newUrls,\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -416
+      ],
+      "id": "d1bcc1c5-f1d3-4f98-bc95-ee9153473353",
+      "name": "Split existing and new URLs"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  url: $input.first().json.newUrls\n}]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -976,
+        -16
+      ],
+      "id": "c29b5f21-fe00-4aa6-8f67-f3b866ffb423",
+      "name": "New URLs"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -624,
+        -16
+      ],
+      "id": "b5792a8a-6987-46d0-a14b-eb7132f51b1c",
+      "name": "Foreach new URL"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "url",
+              "cssSelector": ".post-link",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -352,
+        -416
+      ],
+      "id": "99ed668d-571f-4365-b994-aa1b70aa6b81",
+      "name": "Extract Newspage URLs"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ url: $input.first().json.url.map(url => $('Define Overview Page URL').first().json.url + url) }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        -416
+      ],
+      "id": "68a44511-0b6d-45e7-a069-17f222b14483",
+      "name": "Add Overview Page URL to every Newspage URL"
+    },
+    {
+      "parameters": {
+        "jsCode": "const urls = items[0].json.url;\nconst formattedUrls = urls.map(url => `'${url}'`).join(', ');\n\nreturn [{\n  formattedUrls,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        -416
+      ],
+      "id": "f435aa3e-b64c-4beb-bb85-ebdb977f9b10",
+      "name": "Prepare URLs for IN condition"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ url: $input.first().json.existingUrls }]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -976,
+        -176
+      ],
+      "id": "1e0fafc0-8e41-4f85-bd8b-b7f1f10fe6bf",
+      "name": "Existing URLs"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -560,
+        -416
+      ],
+      "id": "6c8e436a-f570-4f93-b187-119a58d72ded",
+      "name": "GET Overview Page"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        0
+      ],
+      "id": "05c878e1-f88b-4325-91fc-164228e6774a",
+      "name": "GET Newspage"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "title",
+              "cssSelector": ".post-title"
+            },
+            {
+              "key": "text",
+              "cssSelector": ".post-content",
+              "returnValue": "html"
+            },
+            {
+              "key": "published_at",
+              "cssSelector": ".dt-published",
+              "returnValue": "attribute",
+              "attribute": "datetime"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        48,
+        0
+      ],
+      "id": "b2888f73-cb3d-44a0-860e-44540c8dd74a",
+      "name": "Extract title, text, published_at"
+    },
+    {
+      "parameters": {
+        "html": "={{ $json.text }}",
+        "destinationKey": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        256,
+        0
+      ],
+      "id": "b6aef2c7-82e4-454c-ab0a-563494cc31e7",
+      "name": "HTML to Markdown for text"
     },
     {
       "parameters": {
@@ -217,181 +385,13 @@
         240
       ],
       "id": "d27cab62-be29-40ca-9633-26114c7f9875",
-      "name": "Insert rows in a table",
+      "name": "Insert DB Object into news table",
       "credentials": {
         "postgres": {
           "id": "eyuB8DY6gvj3FVFl",
           "name": "Postgres account"
         }
       }
-    },
-    {
-      "parameters": {
-        "options": {
-          "reset": false
-        }
-      },
-      "type": "n8n-nodes-base.splitInBatches",
-      "typeVersion": 3,
-      "position": [
-        -624,
-        -16
-      ],
-      "id": "b5792a8a-6987-46d0-a14b-eb7132f51b1c",
-      "name": "Loop Over Items"
-    },
-    {
-      "parameters": {
-        "fieldToSplitOut": "url",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.splitOut",
-      "typeVersion": 1,
-      "position": [
-        -800,
-        -16
-      ],
-      "id": "37c8d7db-8f4f-42a2-b23a-07a7b10afa04",
-      "name": "Split Out"
-    },
-    {
-      "parameters": {
-        "jsCode": "return [{ url: $input.first().json.url.map(url => $('Define Overview Page URL').first().json.url + url) }];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -144,
-        -416
-      ],
-      "id": "68a44511-0b6d-45e7-a069-17f222b14483",
-      "name": "Add Hostname"
-    },
-    {
-      "parameters": {
-        "jsCode": "return [{\n  url: 'https://blog.sharaal.de',\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -768,
-        -416
-      ],
-      "id": "5c202fd4-9609-46d3-9b53-12b89e998a7a",
-      "name": "Define Overview Page URL"
-    },
-    {
-      "parameters": {
-        "url": "={{ $json.url }}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        -560,
-        -416
-      ],
-      "id": "6c8e436a-f570-4f93-b187-119a58d72ded",
-      "name": "Get Overview Page"
-    },
-    {
-      "parameters": {
-        "operation": "extractHtmlContent",
-        "extractionValues": {
-          "values": [
-            {
-              "key": "url",
-              "cssSelector": ".post-link",
-              "returnValue": "attribute",
-              "attribute": "href",
-              "returnArray": true
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.html",
-      "typeVersion": 1.2,
-      "position": [
-        -352,
-        -416
-      ],
-      "id": "99ed668d-571f-4365-b994-aa1b70aa6b81",
-      "name": "Extract URLs"
-    },
-    {
-      "parameters": {
-        "jsCode": "const urls = items[0].json.url;\nconst formattedUrls = urls.map(url => `'${url}'`).join(', ');\n\nreturn [{\n  formattedUrls,\n}];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        64,
-        -416
-      ],
-      "id": "f435aa3e-b64c-4beb-bb85-ebdb977f9b10",
-      "name": "Prepare URLs for in condition"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT url FROM news WHERE url IN ({{ $json.formattedUrls }});",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.6,
-      "position": [
-        272,
-        -416
-      ],
-      "id": "33731792-71df-4aa8-8a4c-a4dee1d65fbc",
-      "name": "SELECT existing URLs",
-      "alwaysOutputData": true,
-      "credentials": {
-        "postgres": {
-          "id": "eyuB8DY6gvj3FVFl",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "jsCode": "const originalUrls = $('Add Hostname').first().json.url;\nconst existingUrls = $input.all().reduce((array, current) => [...array, current.json.url], []);\nconst newUrls = originalUrls.filter(url => !existingUrls.includes(url));\n\nreturn [\n  {\n    existingUrls,\n    newUrls,\n  }\n];"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        464,
-        -416
-      ],
-      "id": "d1bcc1c5-f1d3-4f98-bc95-ee9153473353",
-      "name": "Split existing and new URLs"
-    },
-    {
-      "parameters": {
-        "jsCode": "return [{\n  url: $input.first().json.newUrls\n}]"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -976,
-        -16
-      ],
-      "id": "c29b5f21-fe00-4aa6-8f67-f3b866ffb423",
-      "name": "New URLs"
-    },
-    {
-      "parameters": {
-        "jsCode": "return [{ url: $input.first().json.existingUrls }]"
-      },
-      "type": "n8n-nodes-base.code",
-      "typeVersion": 2,
-      "position": [
-        -976,
-        -176
-      ],
-      "id": "1e0fafc0-8e41-4f85-bd8b-b7f1f10fe6bf",
-      "name": "existingURLs"
     }
   ],
   "pinData": {},
@@ -401,39 +401,6 @@
         [
           {
             "node": "Define Overview Page URL",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "HTTP Request": {
-      "main": [
-        [
-          {
-            "node": "HTML",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "HTML": {
-      "main": [
-        [
-          {
-            "node": "Markdown",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Markdown": {
-      "main": [
-        [
-          {
-            "node": "Add vectorisingText",
             "type": "main",
             "index": 0
           }
@@ -466,19 +433,7 @@
       "main": [
         [
           {
-            "node": "Insert rows in a table",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Loop Over Items": {
-      "main": [
-        [],
-        [
-          {
-            "node": "HTTP Request",
+            "node": "Insert DB Object into news table",
             "type": "main",
             "index": 0
           }
@@ -489,18 +444,7 @@
       "main": [
         [
           {
-            "node": "Loop Over Items",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Add Hostname": {
-      "main": [
-        [
-          {
-            "node": "Prepare URLs for in condition",
+            "node": "Foreach new URL",
             "type": "main",
             "index": 0
           }
@@ -511,40 +455,7 @@
       "main": [
         [
           {
-            "node": "Get Overview Page",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Get Overview Page": {
-      "main": [
-        [
-          {
-            "node": "Extract URLs",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Extract URLs": {
-      "main": [
-        [
-          {
-            "node": "Add Hostname",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Prepare URLs for in condition": {
-      "main": [
-        [
-          {
-            "node": "SELECT existing URLs",
+            "node": "GET Overview Page",
             "type": "main",
             "index": 0
           }
@@ -571,7 +482,7 @@
             "index": 0
           },
           {
-            "node": "existingURLs",
+            "node": "Existing URLs",
             "type": "main",
             "index": 0
           }
@@ -589,11 +500,100 @@
         ]
       ]
     },
-    "Insert rows in a table": {
+    "Foreach new URL": {
+      "main": [
+        [],
+        [
+          {
+            "node": "GET Newspage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Newspage URLs": {
       "main": [
         [
           {
-            "node": "Loop Over Items",
+            "node": "Add Overview Page URL to every Newspage URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Overview Page URL to every Newspage URL": {
+      "main": [
+        [
+          {
+            "node": "Prepare URLs for IN condition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare URLs for IN condition": {
+      "main": [
+        [
+          {
+            "node": "SELECT existing URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Overview Page": {
+      "main": [
+        [
+          {
+            "node": "Extract Newspage URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Newspage": {
+      "main": [
+        [
+          {
+            "node": "Extract title, text, published_at",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract title, text, published_at": {
+      "main": [
+        [
+          {
+            "node": "HTML to Markdown for text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML to Markdown for text": {
+      "main": [
+        [
+          {
+            "node": "Add vectorisingText",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert DB Object into news table": {
+      "main": [
+        [
+          {
+            "node": "Foreach new URL",
             "type": "main",
             "index": 0
           }
