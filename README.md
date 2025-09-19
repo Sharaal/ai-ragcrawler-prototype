@@ -2,8 +2,9 @@
 
 ## Workflows
 
-1. [Single newspage](./workflows/1-single-newspage/): The workflow only allow to define an URL to a single newspage and process it
-2. [Overview page](./workflows/2-overview-page/): The workflow allow to define an URL to an overview page to extract and process all linked newspages
+1. [Single Newspage](./workflows/1-single-newspage/): The workflow only allow to define an URL to a single newspage and process it
+2. [Overview Page](./workflows/2-overview-page/): The workflow allow to define an URL to an overview page to extract and process all linked newspages
+2. [Search](./workflows/3-search/): The workflow to search for the 3 nearest news via searchText
 
 ## Installation
 

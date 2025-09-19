@@ -1,6 +1,6 @@
-# Overview Page
+# Search
 
-[The previous workflow](../2-overview-page/) is extended with a search to get the top 3 news out for a searchterm.
+The workflow to search for the 3 nearest news via searchText.
 
 ![n8n-workflow](n8n-workflow.png)
 

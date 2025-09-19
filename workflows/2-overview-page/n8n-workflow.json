@@ -1,5 +1,5 @@
 {
-  "name": "My workflow",
+  "name": "Vectorise all news of an overview page",
   "nodes": [
     {
       "parameters": {},
@@ -24,34 +24,6 @@
       ],
       "id": "cdc9c3be-517e-491c-aa03-4f0571f309f6",
       "name": "Add vectorisingText"
-    },
-    {
-      "parameters": {
-        "method": "POST",
-        "url": "http://ollama:11434/api/embeddings",
-        "sendBody": true,
-        "bodyParameters": {
-          "parameters": [
-            {
-              "name": "model",
-              "value": "embeddinggemma"
-            },
-            {
-              "name": "prompt",
-              "value": "={{ $json.vectorisingText }}"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [
-        -160,
-        240
-      ],
-      "id": "e93c2aa4-fabd-4c6a-9811-d6344820bb9c",
-      "name": "Vectorising"
     },
     {
       "parameters": {
@@ -392,6 +364,34 @@
           "name": "Postgres account"
         }
       }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/embeddings",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "embeddinggemma"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.vectorisingText }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        240
+      ],
+      "id": "e93c2aa4-fabd-4c6a-9811-d6344820bb9c",
+      "name": "Vectorising News"
     }
   ],
   "pinData": {},
@@ -411,18 +411,7 @@
       "main": [
         [
           {
-            "node": "Vectorising",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Vectorising": {
-      "main": [
-        [
-          {
-            "node": "Map to DB Object",
+            "node": "Vectorising News",
             "type": "main",
             "index": 0
           }
@@ -599,13 +588,24 @@
           }
         ]
       ]
+    },
+    "Vectorising News": {
+      "main": [
+        [
+          {
+            "node": "Map to DB Object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "0e996eb9-4351-4320-bf25-565a2c9cebb2",
+  "versionId": "47f96ac8-7e0d-4dca-a4cc-e71ace6f6a48",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "8ed4471de2dc5b30576f1e695a9776eb91f52e51e819d1e57038b733d5ba24b9"
