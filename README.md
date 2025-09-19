@@ -1,15 +1,9 @@
 # ai-ragcrawler-prototype
 
-![n8n-workflow](./docs/n8n-workflow.png)
+## Workflows
 
-What the workflow do:
-1. Defines a static URL for the test
-2. Get the HTML of that URL
-3. Map HTML to JSON object and transform HTML of the text to Markdown
-4. Define `vectorisingText` as combination of title and text
-5. Use local embedding model to add the embedding vectors 
-6. Combine all data to a DB object
-7. Stores it in the PostgreSQL
+1. [Single newspage](./workflows/1-single-newspage/): The workflow only allow to define an URL to a single newspage and process it
+2. [Overview page](./workflows/2-overview-page/): The workflow allow to define an URL to an overview page to extract and process all linked newspages
 
 ## Installation
 
@@ -38,5 +32,5 @@ CREATE TABLE news (
 );
 ```
 7. Open n8n in your browser via `http://localhost:5678/` and create account
-8. Import [n8n-workflow.json](./n8n-workflow.json)
+8. Import one of the `n8n-workflow.json` from the [workflows](./workflows/)
 9. Run it :)
