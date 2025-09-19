@@ -1,4 +1,4 @@
-# Single Newspage
+# Overview Page
 
 The workflow allow to define an URL to an overview page to extract and process all linked newspages.
 
