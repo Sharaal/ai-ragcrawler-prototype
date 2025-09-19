@@ -14,7 +14,7 @@
     },
     {
       "parameters": {
-        "jsCode": "return [{\n  vectorisingText: `${$input.first().json.title}\\n\\n${$input.first().json.text}`,\n}];"
+        "jsCode": "return [{\n  vectorisingText: `Title: ${$input.first().json.title}\\n\\nText: ${$input.first().json.text}`,\n}];"
       },
       "type": "n8n-nodes-base.code",
       "typeVersion": 2,
@@ -605,7 +605,7 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "fadd8ce3-eb99-4383-adfb-c958c5badd8e",
+  "versionId": "0e996eb9-4351-4320-bf25-565a2c9cebb2",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "8ed4471de2dc5b30576f1e695a9776eb91f52e51e819d1e57038b733d5ba24b9"
