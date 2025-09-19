@@ -1,0 +1,704 @@
+{
+  "name": "My workflow",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -976,
+        -416
+      ],
+      "id": "63de761b-c8ca-422f-a210-122633407b97",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  vectorisingText: `Title: ${$input.first().json.title}\\n\\nText: ${$input.first().json.text}`,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -368,
+        240
+      ],
+      "id": "cdc9c3be-517e-491c-aa03-4f0571f309f6",
+      "name": "Add vectorisingText"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  title: $('HTML to Markdown for text').first().json.title,\n  text: $('HTML to Markdown for text').first().json.text,\n  published_at: $('HTML to Markdown for text').first().json.published_at,\n  url: $('Foreach new URL').first().json.url,\n  embedding: $input.first().json.embedding,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        48,
+        240
+      ],
+      "id": "4e731be5-3198-4c53-bfc6-35f71deaacaf",
+      "name": "Map to DB Object"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "url",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        -16
+      ],
+      "id": "37c8d7db-8f4f-42a2-b23a-07a7b10afa04",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  url: 'https://blog.sharaal.de',\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -768,
+        -416
+      ],
+      "id": "5c202fd4-9609-46d3-9b53-12b89e998a7a",
+      "name": "Define Overview Page URL"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT url FROM news WHERE url IN ({{ $json.formattedUrls }});",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        272,
+        -416
+      ],
+      "id": "33731792-71df-4aa8-8a4c-a4dee1d65fbc",
+      "name": "SELECT existing URLs",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "eyuB8DY6gvj3FVFl",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const originalUrls = $('Add Overview Page URL to every Newspage URL').first().json.url;\nconst existingUrls = $input.all().reduce((array, current) => [...array, current.json.url], []);\nconst newUrls = originalUrls.filter(url => !existingUrls.includes(url));\n\nreturn [\n  {\n    existingUrls,\n    newUrls,\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -416
+      ],
+      "id": "d1bcc1c5-f1d3-4f98-bc95-ee9153473353",
+      "name": "Split existing and new URLs"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  url: $input.first().json.newUrls\n}]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -976,
+        -16
+      ],
+      "id": "c29b5f21-fe00-4aa6-8f67-f3b866ffb423",
+      "name": "New URLs"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -624,
+        -16
+      ],
+      "id": "b5792a8a-6987-46d0-a14b-eb7132f51b1c",
+      "name": "Foreach new URL"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "url",
+              "cssSelector": ".post-link",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -352,
+        -416
+      ],
+      "id": "99ed668d-571f-4365-b994-aa1b70aa6b81",
+      "name": "Extract Newspage URLs"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ url: $input.first().json.url.map(url => $('Define Overview Page URL').first().json.url + url) }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        -416
+      ],
+      "id": "68a44511-0b6d-45e7-a069-17f222b14483",
+      "name": "Add Overview Page URL to every Newspage URL"
+    },
+    {
+      "parameters": {
+        "jsCode": "const urls = items[0].json.url;\nconst formattedUrls = urls.map(url => `'${url}'`).join(', ');\n\nreturn [{\n  formattedUrls,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        -416
+      ],
+      "id": "f435aa3e-b64c-4beb-bb85-ebdb977f9b10",
+      "name": "Prepare URLs for IN condition"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ url: $input.first().json.existingUrls }]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -976,
+        -176
+      ],
+      "id": "1e0fafc0-8e41-4f85-bd8b-b7f1f10fe6bf",
+      "name": "Existing URLs"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -560,
+        -416
+      ],
+      "id": "6c8e436a-f570-4f93-b187-119a58d72ded",
+      "name": "GET Overview Page"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        0
+      ],
+      "id": "05c878e1-f88b-4325-91fc-164228e6774a",
+      "name": "GET Newspage"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "title",
+              "cssSelector": ".post-title"
+            },
+            {
+              "key": "text",
+              "cssSelector": ".post-content",
+              "returnValue": "html"
+            },
+            {
+              "key": "published_at",
+              "cssSelector": ".dt-published",
+              "returnValue": "attribute",
+              "attribute": "datetime"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        48,
+        0
+      ],
+      "id": "b2888f73-cb3d-44a0-860e-44540c8dd74a",
+      "name": "Extract title, text, published_at"
+    },
+    {
+      "parameters": {
+        "html": "={{ $json.text }}",
+        "destinationKey": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        256,
+        0
+      ],
+      "id": "b6aef2c7-82e4-454c-ab0a-563494cc31e7",
+      "name": "HTML to Markdown for text"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "news",
+          "mode": "list",
+          "cachedResultName": "news"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "published_at",
+              "displayName": "published_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "embedding",
+              "displayName": "embedding",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": []
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        256,
+        240
+      ],
+      "id": "d27cab62-be29-40ca-9633-26114c7f9875",
+      "name": "Insert DB Object into news table",
+      "credentials": {
+        "postgres": {
+          "id": "eyuB8DY6gvj3FVFl",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  searchText: 'Google',\n}]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1248,
+        592
+      ],
+      "id": "45b34172-4f88-4250-bc0e-a9ead199130a",
+      "name": "Define searchText"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/embeddings",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "embeddinggemma"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.vectorisingText }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        240
+      ],
+      "id": "e93c2aa4-fabd-4c6a-9811-d6344820bb9c",
+      "name": "Vectorising News"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/embeddings",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "embeddinggemma"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.searchText }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -1024,
+        592
+      ],
+      "id": "d335c5be-5c44-4756-8981-ee89e678c556",
+      "name": "Vectorising searchText"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  id,\n  title,\n  text,\n  published_at,\n  url\nFROM\n  news\nORDER BY\n  embedding <-> ARRAY[{{$json.embedding.join(', ')}}]::vector(768)\nLIMIT 3;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        -816,
+        592
+      ],
+      "id": "cbd0f637-ea70-436f-af29-0940d557d7f8",
+      "name": "SELECT nearest News",
+      "credentials": {
+        "postgres": {
+          "id": "eyuB8DY6gvj3FVFl",
+          "name": "Postgres account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Define Overview Page URL",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Define searchText",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add vectorisingText": {
+      "main": [
+        [
+          {
+            "node": "Vectorising News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map to DB Object": {
+      "main": [
+        [
+          {
+            "node": "Insert DB Object into news table",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Foreach new URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Define Overview Page URL": {
+      "main": [
+        [
+          {
+            "node": "GET Overview Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SELECT existing URLs": {
+      "main": [
+        [
+          {
+            "node": "Split existing and new URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split existing and new URLs": {
+      "main": [
+        [
+          {
+            "node": "New URLs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Existing URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New URLs": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Foreach new URL": {
+      "main": [
+        [],
+        [
+          {
+            "node": "GET Newspage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Newspage URLs": {
+      "main": [
+        [
+          {
+            "node": "Add Overview Page URL to every Newspage URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Overview Page URL to every Newspage URL": {
+      "main": [
+        [
+          {
+            "node": "Prepare URLs for IN condition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare URLs for IN condition": {
+      "main": [
+        [
+          {
+            "node": "SELECT existing URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Overview Page": {
+      "main": [
+        [
+          {
+            "node": "Extract Newspage URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Newspage": {
+      "main": [
+        [
+          {
+            "node": "Extract title, text, published_at",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract title, text, published_at": {
+      "main": [
+        [
+          {
+            "node": "HTML to Markdown for text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML to Markdown for text": {
+      "main": [
+        [
+          {
+            "node": "Add vectorisingText",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert DB Object into news table": {
+      "main": [
+        [
+          {
+            "node": "Foreach new URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Define searchText": {
+      "main": [
+        [
+          {
+            "node": "Vectorising searchText",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vectorising News": {
+      "main": [
+        [
+          {
+            "node": "Map to DB Object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vectorising searchText": {
+      "main": [
+        [
+          {
+            "node": "SELECT nearest News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "7914a3ee-81f8-45eb-8a50-b8278274ebab",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8ed4471de2dc5b30576f1e695a9776eb91f52e51e819d1e57038b733d5ba24b9"
+  },
+  "id": "asyevXYC3ZnZx5du",
+  "tags": []
+}
