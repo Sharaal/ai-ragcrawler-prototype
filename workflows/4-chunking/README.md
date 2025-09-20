@@ -36,4 +36,12 @@ What the workflow exactly do:
 
 # Search
 
-There is still the workflow to search for a news like in [3-search](../3-search/). Its just changed to search for a chunk and join the news data for the result.
+The search is changed to make a semantic search with the embeddings to find matchable results and then reranking the results by exact matchings of the search term in the title or text.
+
+![Search for News](./Search%20for%20News.png)
+
+What the workflow exactly do:
+1. An example searchText is defined
+2. Vectorising the searchText 
+3. Select the 20 nearest news out of the database
+4. Reranking the news, priorise matches in title over text over rest

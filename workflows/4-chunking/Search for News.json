@@ -45,7 +45,7 @@
     {
       "parameters": {
         "operation": "executeQuery",
-        "query": "WITH ranked_chunks AS (\n    SELECT\n        news_id,\n        chunks.embedding <-> ARRAY[{{$json.embedding.join(', ')}}]::vector(768) AS distance,\n        ROW_NUMBER() OVER (PARTITION BY news_id ORDER BY chunks.embedding <-> ARRAY[{{$json.embedding.join(', ')}}]::vector(768) ASC) AS rn\n    FROM\n        chunks\n)\nSELECT\n    n.id,\n    n.title,\n    n.text,\n    n.published_at,\n    n.url,\n    rc.distance\nFROM\n    ranked_chunks AS rc\nINNER JOIN\n    news AS n ON n.id = rc.news_id\nWHERE\n    rc.rn = 1\nORDER BY\n    rc.distance ASC\nLIMIT 10;",
+        "query": "WITH ranked_chunks AS (\n    SELECT\n        news_id,\n        chunks.embedding <-> ARRAY[{{$json.embedding.join(', ')}}]::vector(768) AS distance,\n        ROW_NUMBER() OVER (PARTITION BY news_id ORDER BY chunks.embedding <-> ARRAY[{{$json.embedding.join(', ')}}]::vector(768) ASC) AS rn\n    FROM\n        chunks\n)\nSELECT\n    n.id,\n    n.title,\n    n.text,\n    n.published_at,\n    n.url,\n    rc.distance\nFROM\n    ranked_chunks AS rc\nINNER JOIN\n    news AS n ON n.id = rc.news_id\nWHERE\n    rc.rn = 1\nORDER BY\n    rc.distance ASC\nLIMIT 20;",
         "options": {}
       },
       "type": "n8n-nodes-base.postgres",
@@ -73,6 +73,19 @@
       ],
       "id": "95939cba-fc08-478c-af26-61180590713c",
       "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "jsCode": "const allResults = $input.all().map(item => item.json);\nconst searchText = $('Define searchText').first().json.searchText;\n\nallResults.sort((a, b) => {\n  const aTitleMatch = a.title.includes(searchText);\n  const bTitleMatch = b.title.includes(searchText);\n  if (aTitleMatch && !bTitleMatch) {\n    return -1;\n  }\n  if (!aTitleMatch && bTitleMatch) {\n    return 1;\n  }\n\n  const aTextMatch = a.text.includes(searchText);\n  const bTextMatch = b.text.includes(searchText);\n  if (aTextMatch && !bTextMatch) {\n    return -1;\n  }\n  if (!aTextMatch && bTextMatch) {\n    return 1;\n  }\n\n  return 0;\n});\n\nreturn allResults.slice(0, 10);"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        432,
+        -48
+      ],
+      "id": "4f54f89b-0ba1-4142-a61f-aca6813b2f3d",
+      "name": "Reranking"
     }
   ],
   "pinData": {},
@@ -109,13 +122,24 @@
           }
         ]
       ]
+    },
+    "SELECT nearest News": {
+      "main": [
+        [
+          {
+            "node": "Reranking",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
     }
   },
   "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "b0ea44b2-2be5-4963-9492-9c9cb689417c",
+  "versionId": "c81d360c-2ef6-45b8-b77e-1c413d642d78",
   "meta": {
     "instanceId": "8ed4471de2dc5b30576f1e695a9776eb91f52e51e819d1e57038b733d5ba24b9"
   },
