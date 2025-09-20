@@ -20,7 +20,7 @@ What the workflow exactly do:
 
 The sub workflow pulls a newspage, chunks the text and vectorise all of them:
 
-![Pull and Vectorise Newspage](./Vectorise%20all%20news%20of%20an%20overview%20page.png)
+![Pull and Vectorise Newspage](./Pull%20and%20Vectorise%20Newspage.png)
 
 What the workflow exactly do:
 1. Get the HTML of the newspage
