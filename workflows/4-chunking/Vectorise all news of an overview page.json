@@ -1,0 +1,378 @@
+{
+  "name": "Vectorise all news of an overview page",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -976,
+        -416
+      ],
+      "id": "63de761b-c8ca-422f-a210-122633407b97",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "url",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        -800,
+        -16
+      ],
+      "id": "37c8d7db-8f4f-42a2-b23a-07a7b10afa04",
+      "name": "Split Out"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  url: 'https://blog.sharaal.de',\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -768,
+        -416
+      ],
+      "id": "5c202fd4-9609-46d3-9b53-12b89e998a7a",
+      "name": "Define Overview Page URL"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT url FROM news WHERE url IN ({{ $json.formattedUrls }});",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        272,
+        -416
+      ],
+      "id": "33731792-71df-4aa8-8a4c-a4dee1d65fbc",
+      "name": "SELECT existing URLs",
+      "alwaysOutputData": true,
+      "credentials": {
+        "postgres": {
+          "id": "eyuB8DY6gvj3FVFl",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const originalUrls = $('Add Overview Page URL to every Newspage URL').first().json.url;\nconst existingUrls = $input.all().reduce((array, current) => [...array, current.json.url], []);\nconst newUrls = originalUrls.filter(url => !existingUrls.includes(url));\n\nreturn [\n  {\n    existingUrls,\n    newUrls,\n  }\n];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        464,
+        -416
+      ],
+      "id": "d1bcc1c5-f1d3-4f98-bc95-ee9153473353",
+      "name": "Split existing and new URLs"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  url: $input.first().json.newUrls\n}]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -976,
+        -16
+      ],
+      "id": "c29b5f21-fe00-4aa6-8f67-f3b866ffb423",
+      "name": "New URLs"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -624,
+        -16
+      ],
+      "id": "b5792a8a-6987-46d0-a14b-eb7132f51b1c",
+      "name": "Foreach new URL"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "url",
+              "cssSelector": ".post-link",
+              "returnValue": "attribute",
+              "attribute": "href",
+              "returnArray": true
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        -352,
+        -416
+      ],
+      "id": "99ed668d-571f-4365-b994-aa1b70aa6b81",
+      "name": "Extract Newspage URLs"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ url: $input.first().json.url.map(url => 'https://blog.sharaal.de' + url) }];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -144,
+        -416
+      ],
+      "id": "68a44511-0b6d-45e7-a069-17f222b14483",
+      "name": "Add Overview Page URL to every Newspage URL"
+    },
+    {
+      "parameters": {
+        "jsCode": "const urls = items[0].json.url;\nconst formattedUrls = urls.map(url => `'${url}'`).join(', ');\n\nreturn [{\n  formattedUrls,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        64,
+        -416
+      ],
+      "id": "f435aa3e-b64c-4beb-bb85-ebdb977f9b10",
+      "name": "Prepare URLs for IN condition"
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{ url: $input.first().json.existingUrls }]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -976,
+        -176
+      ],
+      "id": "1e0fafc0-8e41-4f85-bd8b-b7f1f10fe6bf",
+      "name": "Existing URLs"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -560,
+        -416
+      ],
+      "id": "6c8e436a-f570-4f93-b187-119a58d72ded",
+      "name": "GET Overview Page"
+    },
+    {
+      "parameters": {
+        "workflowId": {
+          "__rl": true,
+          "value": "vVXZl0sCvQMYTRxp",
+          "mode": "list",
+          "cachedResultName": "Pull and Vectorise Newspage"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "url": "={{ $json.url }}"
+          },
+          "matchingColumns": [
+            "url"
+          ],
+          "schema": [
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "canBeUsedToMatch": true,
+              "type": "string",
+              "removed": false
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": true
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.executeWorkflow",
+      "typeVersion": 1.2,
+      "position": [
+        -416,
+        80
+      ],
+      "id": "8bca2f0f-cc81-4eb1-9e23-199412484ded",
+      "name": "Call 'Pull and Vectorise Newspage'"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Define Overview Page URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split Out": {
+      "main": [
+        [
+          {
+            "node": "Foreach new URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Define Overview Page URL": {
+      "main": [
+        [
+          {
+            "node": "GET Overview Page",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "SELECT existing URLs": {
+      "main": [
+        [
+          {
+            "node": "Split existing and new URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split existing and new URLs": {
+      "main": [
+        [
+          {
+            "node": "New URLs",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Existing URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "New URLs": {
+      "main": [
+        [
+          {
+            "node": "Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Foreach new URL": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Call 'Pull and Vectorise Newspage'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract Newspage URLs": {
+      "main": [
+        [
+          {
+            "node": "Add Overview Page URL to every Newspage URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Add Overview Page URL to every Newspage URL": {
+      "main": [
+        [
+          {
+            "node": "Prepare URLs for IN condition",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Prepare URLs for IN condition": {
+      "main": [
+        [
+          {
+            "node": "SELECT existing URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Overview Page": {
+      "main": [
+        [
+          {
+            "node": "Extract Newspage URLs",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Call 'Pull and Vectorise Newspage'": {
+      "main": [
+        [
+          {
+            "node": "Foreach new URL",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "6d665e89-b568-4f14-9ea1-211c994dffaf",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "8ed4471de2dc5b30576f1e695a9776eb91f52e51e819d1e57038b733d5ba24b9"
+  },
+  "id": "asyevXYC3ZnZx5du",
+  "tags": []
+}

@@ -1,0 +1,510 @@
+{
+  "name": "Pull and Vectorise Newspage",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "return [{\n  vectorisingText: `Title: ${$('HTML to Markdown for text').first().json.title}\\n\\nText: ${$input.first().json.chunk}`,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        224,
+        320
+      ],
+      "id": "8480b355-6e33-4ea6-aac2-e0493c27321e",
+      "name": "Add vectorisingText"
+    },
+    {
+      "parameters": {
+        "url": "={{ $json.url }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -128,
+        16
+      ],
+      "id": "e76e324f-93ef-4716-9d50-f550186e0804",
+      "name": "GET Newspage"
+    },
+    {
+      "parameters": {
+        "operation": "extractHtmlContent",
+        "extractionValues": {
+          "values": [
+            {
+              "key": "title",
+              "cssSelector": ".post-title"
+            },
+            {
+              "key": "text",
+              "cssSelector": ".post-content",
+              "returnValue": "html"
+            },
+            {
+              "key": "published_at",
+              "cssSelector": ".dt-published",
+              "returnValue": "attribute",
+              "attribute": "datetime"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.html",
+      "typeVersion": 1.2,
+      "position": [
+        80,
+        16
+      ],
+      "id": "58896b70-73d5-4778-8978-9227db2c86e1",
+      "name": "Extract title, text, published_at"
+    },
+    {
+      "parameters": {
+        "html": "={{ $json.text }}",
+        "destinationKey": "text",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.markdown",
+      "typeVersion": 1,
+      "position": [
+        288,
+        16
+      ],
+      "id": "6cd6073b-f97f-4568-9b2e-fa601b792414",
+      "name": "HTML to Markdown for text"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/embeddings",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "embeddinggemma"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.vectorisingText }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        400,
+        320
+      ],
+      "id": "78b0ffd5-64ad-435e-a9d3-9222bd579bda",
+      "name": "Vectorising News"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "news",
+          "mode": "list",
+          "cachedResultName": "news"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "title",
+              "displayName": "title",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "published_at",
+              "displayName": "published_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "dateTime",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "embedding",
+              "displayName": "embedding",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": []
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        672,
+        16
+      ],
+      "id": "946c1292-bc36-4585-b4f8-7d8a857e3fdb",
+      "name": "Insert news",
+      "credentials": {
+        "postgres": {
+          "id": "eyuB8DY6gvj3FVFl",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  title: $('HTML to Markdown for text').first().json.title,\n  text: $('HTML to Markdown for text').first().json.text,\n  published_at: $('HTML to Markdown for text').first().json.published_at,\n  url: $('When Executed by Another Workflow').first().json.url,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        480,
+        16
+      ],
+      "id": "86cb6891-90fc-4758-97e6-e7b50ab191dd",
+      "name": "Map to News DB Object"
+    },
+    {
+      "parameters": {
+        "schema": {
+          "__rl": true,
+          "mode": "list",
+          "value": "public"
+        },
+        "table": {
+          "__rl": true,
+          "value": "chunks",
+          "mode": "list",
+          "cachedResultName": "chunks"
+        },
+        "columns": {
+          "mappingMode": "autoMapInputData",
+          "value": {},
+          "matchingColumns": [
+            "id"
+          ],
+          "schema": [
+            {
+              "id": "id",
+              "displayName": "id",
+              "required": false,
+              "defaultMatch": true,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "news_id",
+              "displayName": "news_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "number",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "text",
+              "displayName": "text",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "embedding",
+              "displayName": "embedding",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "options",
+              "canBeUsedToMatch": true,
+              "options": []
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        752,
+        320
+      ],
+      "id": "154c2f72-971a-41a4-936a-1f2a27d10c17",
+      "name": "Insert chunk",
+      "credentials": {
+        "postgres": {
+          "id": "eyuB8DY6gvj3FVFl",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "return [{\n  news_id: $('Insert news').first().json.id,\n  chunk_index: $('Loop Over Items').first().json.chunk_index,\n  vectorising_text: $('Add vectorisingText').first().json.vectorisingText,\n  embedding: $input.first().json.embedding,\n}];"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        576,
+        320
+      ],
+      "id": "9aae9dcb-896d-4433-a142-0960a75b2351",
+      "name": "Map to Chunks DB Object"
+    },
+    {
+      "parameters": {
+        "jsCode": "const text = $input.first().json.text;\nconst rawChunks = text.split('\\n\\n').filter(p => p.trim() !== '');\n\nconst finalChunks = [];\nlet buffer = '';\nfor (const chunk of rawChunks) {\n  if (chunk.startsWith('#')) {\n    if (buffer !== '') {\n      finalChunks.push(buffer);\n    }\n    buffer = `${chunk}\\n\\n`;\n  } else {\n    finalChunks.push(buffer + chunk);\n    buffer = '';\n  }\n}\nif (buffer !== '') {\n  finalChunks.push(buffer);\n}\n\nreturn finalChunks.map((chunk, chunk_index) => ({\n  chunk_index,\n  chunk,\n}));"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -176,
+        240
+      ],
+      "id": "2d97ff95-3667-42c3-9754-93aa350464a4",
+      "name": "Split into Chunks"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        32,
+        240
+      ],
+      "id": "a8966d8d-5db3-4d83-82e5-2943856e66d2",
+      "name": "Loop Over Items"
+    },
+    {
+      "parameters": {
+        "workflowInputs": {
+          "values": [
+            {
+              "name": "url"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -368,
+        16
+      ],
+      "id": "f3e2233a-e38f-47a3-8449-12a5dfd44e61",
+      "name": "When Executed by Another Workflow"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "url": "https://blog.sharaal.de/2025/06/20/die-zukunft-der-arbeitswelt-chancen-und-herausforderungen-durch-ki.html"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Add vectorisingText": {
+      "main": [
+        [
+          {
+            "node": "Vectorising News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "GET Newspage": {
+      "main": [
+        [
+          {
+            "node": "Extract title, text, published_at",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract title, text, published_at": {
+      "main": [
+        [
+          {
+            "node": "HTML to Markdown for text",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTML to Markdown for text": {
+      "main": [
+        [
+          {
+            "node": "Map to News DB Object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vectorising News": {
+      "main": [
+        [
+          {
+            "node": "Map to Chunks DB Object",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert news": {
+      "main": [
+        [
+          {
+            "node": "Split into Chunks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map to News DB Object": {
+      "main": [
+        [
+          {
+            "node": "Insert news",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Insert chunk": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Map to Chunks DB Object": {
+      "main": [
+        [
+          {
+            "node": "Insert chunk",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Split into Chunks": {
+      "main": [
+        [
+          {
+            "node": "Loop Over Items",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Over Items": {
+      "main": [
+        [],
+        [
+          {
+            "node": "Add vectorisingText",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "GET Newspage",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "67b51705-465d-4a95-8170-cf3707088be1",
+  "meta": {
+    "instanceId": "8ed4471de2dc5b30576f1e695a9776eb91f52e51e819d1e57038b733d5ba24b9"
+  },
+  "id": "vVXZl0sCvQMYTRxp",
+  "tags": []
+}

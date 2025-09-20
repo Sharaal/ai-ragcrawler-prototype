@@ -4,7 +4,8 @@
 
 1. [Single Newspage](./workflows/1-single-newspage/): The workflow only allow to define an URL to a single newspage and process it
 2. [Overview Page](./workflows/2-overview-page/): The workflow allow to define an URL to an overview page to extract and process all linked newspages
-2. [Search](./workflows/3-search/): The workflow to search for the 3 nearest news via searchText
+3. [Search](./workflows/3-search/): The workflow to search for the 3 nearest news via searchText
+4. [Chunking](./workflows/4-chunking/): Chunking each news into paragraphs and vectorise them
 
 ## Installation
 
@@ -21,17 +22,13 @@
 ```sql
 CREATE EXTENSION IF NOT EXISTS vector;
 ```
-6. Create `news` table via:
-```sql
-CREATE TABLE news (
-    id SERIAL PRIMARY KEY,
-    title VARCHAR(255),
-    text TEXT,
-    published_at TIMESTAMP,
-    url VARCHAR(255) UNIQUE,
-    embedding vector(768)
-);
-```
-7. Open n8n in your browser via `http://localhost:5678/` and create account
-8. Import one of the `n8n-workflow.json` from the [workflows](./workflows/)
-9. Run it :)
+6. Open n8n in your browser via `http://localhost:5678/` and create account
+7. Choose a workflow from [workflows](./workflows/) which you want to try out
+    1. Execute the SQL from the `database.sql` in adminer
+    2. Import the `.json` files into n8n
+8. Run it :)
+
+## n8n Learnings
+
+* Save often... If the browser crashes, the changes are gone...
+* Loop in loop doesn't work, the n8n way for this is to split the logic into different workflows

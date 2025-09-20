@@ -1,0 +1,124 @@
+{
+  "name": "Search for News",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "return [{\n  searchText: 'Bedingungsloses Grundeinkommen',\n}]"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        -48
+      ],
+      "id": "cd81ef6b-8715-4c54-9add-ad393e40c081",
+      "name": "Define searchText"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://ollama:11434/api/embeddings",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "model",
+              "value": "embeddinggemma"
+            },
+            {
+              "name": "prompt",
+              "value": "={{ $json.searchText }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        16,
+        -48
+      ],
+      "id": "59a63b9b-8fea-4fc4-a8a2-3b77084cef66",
+      "name": "Vectorising searchText"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT\n  news.id,\n  news.title,\n  news.text,\n  news.published_at,\n  news.url\nFROM\n  chunks\n  INNER JOIN news ON news.id = chunks.news_id\nORDER BY\n  chunks.embedding <-> ARRAY[{{$json.embedding.join(', ')}}]::vector(768)\nLIMIT 10;",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.6,
+      "position": [
+        224,
+        -48
+      ],
+      "id": "e263699e-1088-4ebc-b3ca-f00668007bed",
+      "name": "SELECT nearest News",
+      "credentials": {
+        "postgres": {
+          "id": "eyuB8DY6gvj3FVFl",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        -48
+      ],
+      "id": "95939cba-fc08-478c-af26-61180590713c",
+      "name": "When clicking ‘Execute workflow’"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Define searchText": {
+      "main": [
+        [
+          {
+            "node": "Vectorising searchText",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Vectorising searchText": {
+      "main": [
+        [
+          {
+            "node": "SELECT nearest News",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Define searchText",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "326ae35c-1ae8-4ca1-9f92-af6d9061e250",
+  "meta": {
+    "instanceId": "8ed4471de2dc5b30576f1e695a9776eb91f52e51e819d1e57038b733d5ba24b9"
+  },
+  "id": "roidju8d53GjeAYL",
+  "tags": []
+}
